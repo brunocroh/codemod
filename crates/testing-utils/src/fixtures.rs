@@ -103,6 +103,7 @@ impl TestSource {
                     // For filesystem test cases, we need to handle multiple input/expected file pairs
                     // Handle cases where expected files might be missing (for --update-snapshots)
                     for (key, input_file) in fs_case.input_files {
+                        println!("file input: {:?}", input_file.path);
                         let (expected_content, expected_path) =
                             match fs_case.expected_files.get(&key) {
                                 Some(expected_file) => (
@@ -111,9 +112,33 @@ impl TestSource {
                                 ),
                                 None => {
                                     // Expected file doesn't exist - create placeholder path for snapshot updates
-                                    let input_path = input_file.path.to_string_lossy().to_string();
-                                    let expected_path = input_path.replace("input", "expected");
-                                    ("".to_string(), Some(PathBuf::from(expected_path)))
+                                    let mut expected_path = PathBuf::new();
+                                    let file_stem =
+                                        input_file.path.file_stem().unwrap().to_str().unwrap();
+                                    let file_path =
+                                        input_file.path.parent().unwrap().to_str().unwrap();
+
+                                    // if filename is input, so created
+                                    if file_stem == "input" {
+                                        println!("entrou carai");
+                                        let file_ext =
+                                            input_file.path.extension().unwrap().to_str().unwrap();
+
+                                        expected_path = PathBuf::from(format!(
+                                            "{}/{}.{}",
+                                            file_path, "expected", file_ext
+                                        ))
+                                    } else {
+                                        let file_name =
+                                            input_file.path.file_name().unwrap().to_str().unwrap();
+                                        expected_path = PathBuf::from(format!(
+                                            "{}/{}",
+                                            file_path.replace("input", "expected"),
+                                            file_name
+                                        ))
+                                    }
+
+                                    ("".to_string(), Some(expected_path))
                                 }
                             };
 
